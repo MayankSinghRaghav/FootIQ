@@ -1,8 +1,11 @@
 import json
+import os
+import tempfile
 import time
 
 
-DEBUG_LOG_PATH = r"c:\Users\mayan\Desktop\Projects\FootIQ\debug-50d223.log"
+LOG_DIR = os.getenv("FOOTIQ_LOG_DIR", tempfile.gettempdir())
+DEBUG_LOG_PATH = os.path.join(LOG_DIR, "footiq_debug.log")
 
 
 def debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: dict):

@@ -92,27 +92,15 @@ export default function App() {
   const [error, setError] = useState("");
 
   const debugLog = (
-    runId: string,
-    hypothesisId: string,
+    _runId: string,
+    _hypothesisId: string,
     location: string,
     message: string,
     data: Record<string, unknown>
   ) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7703/ingest/90dbebe6-b6e3-4cc0-9cd5-11f9fd81b11d", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "50d223" },
-      body: JSON.stringify({
-        sessionId: "50d223",
-        runId,
-        hypothesisId,
-        location,
-        message,
-        data,
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    if (import.meta.env.DEV) {
+      console.debug("[FootIQ]", location, message, data);
+    }
   };
 
   const nav = [
