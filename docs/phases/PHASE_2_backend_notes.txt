@@ -1,0 +1,487 @@
+VIBE CODING MASTER DOC
+FootIQ
+Phase 2 — Backend + RAG Pipeline
+Purpose
+Vibe Coding Prompt + Architecture + Edge Cases
+Phase
+2 of 5 — Backend + RAG Engine
+Stack
+FastAPI · LangChain · ChromaDB · Groq LLM
+Author
+Mayank
+Version
+1.0  |  May 2026
+DROP THIS DOC INTO CURSOR / WINDSURF / CLAUDE AND START BUILDING
+1. Master Vibe Coding Prompt
+Copy the entire prompt below and paste it as your first message into Cursor, Windsurf, or any AI IDE. It contains everything the AI needs to build Phase 2 in one shot without back-and-forth.
+# FootIQ Phase 2 — Build Prompt
+## Project Context
+I am building FootIQ — an AI Copilot for football coaches.
+Phase 2 goal: Build a FastAPI backend with a RAG pipeline so coaches
+can ask plain-English questions about football match data and receive
+accurate, grounded answers.
+## Tech Stack
+- Backend:    FastAPI (Python 3.11+)
+- RAG:        LangChain + ChromaDB (local, persistent)
+- LLM:        Groq API (llama-3.1-8b-instant) — use env var GROQ_API_KEY
+- Embeddings: OpenAI text-embedding-3-small — use env var OPENAI_API_KEY
+- Data:       StatsBomb open data (JSON format, loaded from /data folder)
+## Folder Structure to Create
+footiq-backend/
+  app/
+    main.py          # FastAPI entry point
+    routes/
+      query.py       # POST /query endpoint
+      ingest.py      # POST /ingest endpoint
+      health.py      # GET /health endpoint
+    services/
+      rag.py         # RAG pipeline logic
+      embedder.py    # Embedding + ChromaDB logic
+      loader.py      # StatsBomb JSON parser
+    models/
+      schemas.py     # Pydantic request/response models
+    config.py        # Settings (env vars, constants)
+  data/              # StatsBomb JSON files go here
+  chroma_db/         # Auto-created by ChromaDB
+  tests/             # Unit + integration tests
+  requirements.txt
+## API Endpoints to Build
+1. GET  /health      → { status: ok, vector_count: int }
+2. POST /ingest      → Load JSON from /data, chunk, embed, store in ChromaDB
+3. POST /query       → Accept question, retrieve context, call LLM, return answer
+## /query Request + Response Schema
+Request:  { question: str, match_id: str | None, top_k: int = 5 }
+Response: { answer: str, sources: list[str], confidence: float,
+           match_id: str, processing_time_ms: int }
+## RAG Pipeline Logic (rag.py)
+1. Embed the question using OpenAI text-embedding-3-small
+2. Retrieve top_k most similar chunks from ChromaDB
+3. Filter chunks by match_id if provided
+4. Build prompt: system_prompt + retrieved_context + user_question
+5. Call Groq API (llama-3.1-8b-instant)
+6. Return answer + source chunk IDs + processing time
+## System Prompt for LLM (use exactly this)
+SYSTEM_PROMPT = """
+You are FootIQ, an AI assistant for football coaches.
+Answer ONLY using the match data provided in the context below.
+If the answer is not in the context, say:
+  'I don't have enough match data to answer this.'
+Never guess or fabricate statistics.
+Keep answers concise, factual, and coach-friendly.
+"""
+## StatsBomb Data Ingestion Logic (loader.py)
+- Load all JSON files from /data directory
+- Each JSON = one match event stream (list of event dicts)
+- Convert each event to natural language string:
+  e.g. "Minute 23: Messi (Barcelona) completed a pass to Xavi"
+- Chunk into groups of 20 events per document chunk
+- Store metadata: { match_id, chunk_index, minute_start, minute_end }
+- Embed and store in ChromaDB collection: 'footiq_matches'
+## Error Handling Rules
+- Empty question → 422 Unprocessable Entity
+- No match data in ChromaDB → 503 with clear message
+- Groq API failure → retry once, then 502 Bad Gateway
+- match_id not found → return global search across all matches
+- Always log: question, match_id, chunk_count, latency_ms
+## Requirements (requirements.txt)
+fastapi==0.111.0
+uvicorn==0.30.0
+langchain==0.2.0
+langchain-community==0.2.0
+langchain-openai==0.1.8
+chromadb==0.5.0
+groq==0.9.0
+openai==1.30.0
+pydantic==2.7.0
+python-dotenv==1.0.0
+pytest==8.2.0
+## What to Build — Step by Step
+Step 1: Create folder structure + requirements.txt
+Step 2: Build config.py (env vars: GROQ_API_KEY, OPENAI_API_KEY, CHROMA_PATH)
+Step 3: Build schemas.py (QueryRequest, QueryResponse, IngestResponse)
+Step 4: Build loader.py (StatsBomb JSON → chunked text documents)
+Step 5: Build embedder.py (ChromaDB init, add_documents, similarity_search)
+Step 6: Build rag.py (full pipeline: embed → retrieve → prompt → LLM → respond)
+Step 7: Build routes (health.py, ingest.py, query.py)
+Step 8: Build main.py (mount routes, CORS, startup event to auto-ingest /data)
+Step 9: Write tests/test_query.py (happy path + edge cases)
+Step 10: Write README with setup instructions and example curl commands
+Build all files now. Show complete code for each file.
+2. Architecture Deep Dive
+2.1 Data Flow — Query Lifecycle
+Every coach question follows this exact path through the system:
+Step
+Component
+Action
+Output
+1
+React Frontend
+Coach types question + selects match
+HTTP POST /query with JSON body
+2
+FastAPI Router
+Validates request schema (Pydantic)
+Passes to RAG service or 422 error
+3
+RAG Service
+Calls OpenAI to embed the question
+768-dim float vector
+4
+ChromaDB
+Cosine similarity search against stored chunks
+Top-K chunks + metadata + scores
+5
+RAG Service
+Filters by match_id if provided
+Relevant context string
+6
+RAG Service
+Builds prompt: system + context + question
+Formatted prompt string
+7
+Groq API
+llama-3.1-8b-instant generates answer
+Raw LLM response string
+8
+RAG Service
+Extracts answer, computes confidence score
+Structured QueryResponse
+9
+FastAPI Router
+Returns JSON response with timing
+200 OK + response body
+10
+React Frontend
+Renders answer in chat bubble
+Coach sees grounded answer
+2.2 Data Flow — Ingestion Lifecycle
+Step
+Component
+Action
+1
+POST /ingest or startup event
+Trigger ingestion pipeline
+2
+loader.py
+Scan /data directory for all .json files
+3
+loader.py
+Parse StatsBomb event JSON → list of event dicts
+4
+loader.py
+Convert each event dict → natural language sentence
+5
+loader.py
+Group into chunks of 20 events → list of Document objects
+6
+embedder.py
+Batch-embed all chunks via OpenAI embeddings API
+7
+embedder.py
+Store vectors + metadata in ChromaDB 'footiq_matches' collection
+8
+embedder.py
+Skip re-embedding if chunk already exists (idempotent by chunk_id)
+9
+/ingest route
+Return: { matches_loaded, chunks_created, time_ms }
+2.3 ChromaDB Schema
+Each document chunk stored in ChromaDB has the following structure:
+# ChromaDB document structure
+{
+  id:        'match_{match_id}_chunk_{index}',   # unique chunk ID
+  document:  'Minute 23: Messi completed a pass to Xavi in the middle third...',
+  embedding: [0.021, -0.083, 0.441, ...],        # 1536-dim OpenAI vector
+  metadata: {
+    match_id:     '3788741',
+    match_name:   'Barcelona vs Real Madrid',
+    chunk_index:  4,
+    minute_start: 20,
+    minute_end:   25,
+    home_team:    'Barcelona',
+    away_team:    'Real Madrid',
+  }
+}
+2.4 LLM Prompt Template
+SYSTEM: You are FootIQ, an AI assistant for football coaches.
+        Answer ONLY using the context below.
+        If the answer is not in context, say so. Never fabricate stats.
+CONTEXT (retrieved match data):
+------------------------------
+{retrieved_chunks_joined_by_newline}
+------------------------------
+COACH QUESTION: {user_question}
+ANSWER:
+2.5 Confidence Score Logic
+Confidence is computed from ChromaDB similarity scores — not from the LLM itself:
+def compute_confidence(similarity_scores: list[float]) -> float:
+    # ChromaDB returns L2 distance (lower = more similar)
+    # Convert to 0-1 confidence: 1 - normalized_distance
+    if not similarity_scores:
+        return 0.0
+    avg_distance = sum(similarity_scores) / len(similarity_scores)
+    # Clamp to reasonable range (0 to 2 for L2 distance)
+    confidence = max(0.0, min(1.0, 1 - (avg_distance / 2)))
+    return round(confidence, 3)
+3. Edge Cases & How to Handle Them
+These are all the scenarios where things can go wrong. Every edge case below must be handled in code — not left to crash.
+3.1 Input Edge Cases — /query Endpoint
+Edge Case
+Example
+Expected Behavior
+HTTP Code
+Empty question
+{ "question": "" }
+Return 422 with message: 'Question cannot be empty'
+422
+Question too long
+question > 1000 chars
+Truncate to 1000 chars and process normally
+200
+Question in Hindi/other language
+"कौन सा खिलाड़ी सबसे अच्छा था?"
+Process as-is; LLM handles multilingual input
+200
+Invalid match_id
+{ "match_id": "abc999" }
+Fall back to global search across all matches
+200
+top_k = 0
+{ "top_k": 0 }
+Default to top_k = 5
+200
+top_k > 20
+{ "top_k": 50 }
+Cap at 20 and process
+200
+Question with SQL/injection
+"DROP TABLE matches;"
+Treat as plain text query, no SQL executed
+200
+Repeated identical question
+Same question twice
+Return cached answer if within 60s TTL
+200
+3.2 Data Edge Cases — Ingestion
+Edge Case
+Scenario
+Expected Behavior
+Empty /data directory
+No JSON files present at startup
+Log warning; /health returns vector_count: 0; /query returns 503
+Malformed JSON file
+JSON syntax error in match file
+Skip that file, log error, continue with others
+Match with 0 events
+StatsBomb JSON with empty events array
+Skip match, log warning
+Duplicate ingestion
+POST /ingest called twice
+Skip already-existing chunk IDs (idempotent)
+Very large match file
+> 5000 events in one match
+Still chunk into groups of 20 — no special handling needed
+Missing event fields
+Event dict missing 'player' or 'team' key
+Use 'Unknown' as fallback value for missing fields
+Non-StatsBomb format
+User uploads a different JSON schema
+Return 400 with clear schema error message
+3.3 LLM / API Edge Cases
+Edge Case
+Scenario
+Expected Behavior
+Groq API timeout
+Response takes > 10 seconds
+Retry once with 2s delay; if fails, return 502
+Groq API rate limit
+429 Too Many Requests
+Wait 2s, retry once; if still fails, return 503
+Groq returns empty response
+content field is empty string
+Return fallback: 'Unable to generate answer. Please try again.'
+LLM hallucinates stats
+LLM ignores context and makes up numbers
+Prompt engineering prevents this — system prompt explicitly forbids it
+OpenAI embeddings timeout
+Embedding API down
+Return 503 with message: 'Embedding service unavailable'
+GROQ_API_KEY missing
+Env var not set
+Crash at startup with clear error: 'GROQ_API_KEY not set in .env'
+Context window exceeded
+Too many chunks exceed LLM token limit
+Limit retrieved chunks to top_k=5 by default; trim context to 4000 tokens max
+3.4 ChromaDB Edge Cases
+Edge Case
+Scenario
+Expected Behavior
+Collection doesn't exist
+First run, no ChromaDB collection yet
+Auto-create collection on startup
+ChromaDB folder corrupted
+chroma_db/ directory corrupted
+Log error, delete and re-create collection, re-ingest
+Zero results from search
+Question about something not in match data
+Return answer: 'I don't have match data to answer this'
+Low similarity scores
+All scores below 0.3 threshold
+Include low-confidence flag in response; still return best answer
+ChromaDB disk full
+Storage limit reached
+Log critical error; return 507 Insufficient Storage
+3.5 Edge Case Test Checklist
+Before submitting Phase 2, verify every one of these manually or via pytest:
+#
+Test
+Pass Condition
+1
+POST /query with empty question
+Returns 422
+2
+POST /query with no data ingested
+Returns 503 with message
+3
+POST /query with invalid match_id
+Returns answer from global search
+4
+POST /query happy path
+Returns answer with sources in < 5 seconds
+5
+POST /ingest with empty /data folder
+Returns warning, 0 chunks created
+6
+POST /ingest twice with same data
+Second call returns same count, no duplicates
+7
+GET /health with data loaded
+Returns { status: ok, vector_count: > 0 }
+8
+Groq API key missing
+Server refuses to start with clear error
+9
+Question > 1000 chars
+Truncated and processed, returns 200
+10
+top_k = 0
+Defaults to 5, returns 200
+4. Testing & Validation Guide
+4.1 Manual Testing with curl
+Run these commands after starting the server with: uvicorn app.main:app --reload
+Health Check
+curl http://localhost:8000/health
+# Expected response:
+{ "status": "ok", "vector_count": 1240, "collections": ["footiq_matches"] }
+Ingest Match Data
+curl -X POST http://localhost:8000/ingest
+# Expected response:
+{ "matches_loaded": 3, "chunks_created": 187, "time_ms": 4201 }
+Ask a Question (Happy Path)
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many passes did Barcelona complete?", "match_id": "3788741"}'
+# Expected response:
+{
+  "answer": "Barcelona completed 742 passes in the match, with an accuracy of 89%.",
+  "sources": ["match_3788741_chunk_4", "match_3788741_chunk_11"],
+  "confidence": 0.87,
+  "match_id": "3788741",
+  "processing_time_ms": 1243
+}
+Edge Case — Empty Question
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": ""}'
+# Expected response:
+{ "detail": "Question cannot be empty" }  # HTTP 422
+4.2 Pytest Structure
+# tests/test_query.py
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+client = TestClient(app)
+def test_health():
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+def test_empty_question():
+    r = client.post("/query", json={"question": ""})
+    assert r.status_code == 422
+def test_happy_path():
+    r = client.post("/query", json={"question": "How many shots were taken?"})
+    assert r.status_code == 200
+    assert "answer" in r.json()
+    assert r.json()["confidence"] > 0
+4.3 Definition of Done — Phase 2
+DONE ✓
+All 10 endpoints return correct responses for happy path + edge cases
+DONE ✓
+POST /query answers a real football question in under 5 seconds end-to-end
+DONE ✓
+StatsBomb data is fully ingested into ChromaDB and searchable
+DONE ✓
+All 10 edge case tests pass (manual or pytest)
+DONE ✓
+README has setup steps and example curl commands
+DONE ✓
+Code pushed to GitHub with clean commit history
+5. Local Setup Guide
+5.1 Prerequisites
+Python 3.11+ installed
+GROQ_API_KEY — get free at console.groq.com
+OPENAI_API_KEY — get at platform.openai.com (for embeddings only)
+StatsBomb open data — download from github.com/statsbomb/open-data
+5.2 Setup Commands
+# 1. Clone and enter project
+git clone https://github.com/yourusername/footiq-backend
+cd footiq-backend
+# 2. Create virtual environment
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+# 3. Install dependencies
+pip install -r requirements.txt
+# 4. Create .env file
+echo 'GROQ_API_KEY=your_key_here' > .env
+echo 'OPENAI_API_KEY=your_key_here' >> .env
+echo 'CHROMA_PATH=./chroma_db' >> .env
+# 5. Add StatsBomb match JSONs to /data folder
+cp ~/Downloads/statsbomb/events/*.json ./data/
+# 6. Start server (auto-ingests data on startup)
+uvicorn app.main:app --reload --port 8000
+# 7. Open API docs
+open http://localhost:8000/docs
+5.3 StatsBomb Open Data — Quick Download
+# Download StatsBomb open data (free, no API key needed)
+git clone https://github.com/statsbomb/open-data.git
+# Copy a few match event files to your /data folder
+cp open-data/data/events/3788741.json ./data/   # La Liga match
+cp open-data/data/events/3795108.json ./data/   # Champions League
+cp open-data/data/events/3773369.json ./data/   # World Cup
+6. Overall Build Roadmap
+Phase
+Week
+What You Build
+Deliverable
+Phase 1 ✅
+Week 1
+PRD + Product Definition
+PRD Document (done)
+Phase 2 ← YOU ARE HERE
+Week 2
+FastAPI + RAG Pipeline + ChromaDB
+Working /query API
+Phase 3
+Week 3
+React Frontend + Chat UI + Player Cards
+Working web interface
+Phase 4
+Week 4
+Computer Vision: YOLOv8 + ByteTrack + Heatmaps
+Video analysis pipeline
+Phase 5
+Week 5
+Polish + Deploy + Portfolio Packaging
+Live demo + GitHub + Loom video
+💡 PRO TIP
+After Phase 2 is working, record a 60-second Loom of the /query endpoint returning a real football answer. This alone is impressive enough to show in interviews — most candidates only talk about RAG, you can demo it.

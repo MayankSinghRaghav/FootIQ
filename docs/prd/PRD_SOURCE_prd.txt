@@ -1,0 +1,292 @@
+PRODUCT REQUIREMENTS DOCUMENT
+FootIQ
+AI Copilot for Football Coaches
+Version
+1.0 — MVP
+Author
+Mayank
+Date
+May 2026
+Status
+Draft — Phase 1
+CONFIDENTIAL
+1. Product Overview
+1.1 Problem Statement
+Football coaches at club and academy levels spend hours manually reviewing 90-minute match footage and fragmented stat sheets. This results in delayed tactical decisions, inconsistent player development tracking, and missed opportunities to act on real-time performance data.
+There is no intelligent, conversational tool that lets coaches simply ask questions about a match and get instant, grounded answers backed by real match data.
+1.2 Product Vision
+"
+FootIQ is the AI copilot that turns every match into a coaching advantage — giving football coaches instant, intelligent answers about player performance, tactics, and game patterns through natural language.
+1.3 Target Users
+Persona
+Role
+Primary Pain Point
+Priority
+Club Coach
+Head coach of a semi-pro or amateur club
+No time to review full 90-min footage manually
+P0
+Academy Trainer
+Youth academy coach
+Can't track individual player progress across sessions
+P0
+Analyst Assistant
+Junior performance analyst
+Hours spent compiling stats into reports manually
+P1
+Team Manager
+Club operations manager
+Needs digestible summaries without technical depth
+P2
+2. Goals & Success Metrics
+2.1 Business Goals
+G1 
+Reduce average coach post-match analysis time by 70%
+G2 
+Achieve 85%+ query accuracy (relevant, grounded answers) in beta
+G3 
+Reach 3+ active daily sessions per team within 30 days of onboarding
+G4 
+Establish FootIQ as a portfolio-grade AI product demo for B2B sports tech
+2.2 Success Metrics (3-Layer Framework)
+Layer
+Metric
+Target
+Tool
+Model
+Query relevance (RAG precision)
+≥ 85%
+LangSmith / manual eval
+Model
+Hallucination rate
+< 5%
+Grounding checks
+Product
+Time-to-insight vs. manual
+↓ 70%
+User testing
+Product
+Coach satisfaction score
+≥ 4.2 / 5
+In-app rating
+Product
+Daily active sessions / team
+≥ 3
+Analytics
+Business
+Onboarding completion rate
+≥ 80%
+Funnel tracking
+Business
+Week-2 retention
+≥ 60%
+Cohort analysis
+3. Feature Requirements
+3.1 Feature List — MVP Scope
+ID
+Feature
+Description
+Priority
+Phase
+F01
+Match Q&A
+Ask questions in plain English about any match. Answers grounded in match data via RAG.
+P0
+MVP
+F02
+Player Performance Summary
+Auto-generated post-match report per player with key stats, heatmap highlights, and AI commentary.
+P0
+MVP
+F03
+Match Upload
+Upload match data (JSON/CSV from StatsBomb or custom format). System ingests and indexes automatically.
+P0
+MVP
+F04
+Tactical Insight Cards
+AI-generated cards summarising formation effectiveness, pressing intensity, and transition patterns.
+P1
+MVP
+F05
+Video Clip Tagging
+Auto-tag key match moments (goals, tackles, sprints, pressing triggers) using YOLOv8 + ByteTrack.
+P1
+v1.1
+F06
+Session History
+Coaches can revisit past queries and reports per match.
+P1
+MVP
+F07
+Voice Query
+Ask match questions via voice. Transcribed and processed via Whisper API.
+P2
+v2.0
+F08
+Team Comparison Mode
+Compare two matches or two players side by side with AI narrative.
+P2
+v2.0
+3.2 Feature Deep-Dive — F01: Match Q&A
+User Story
+As a club coach, I want to ask plain-English questions about a match (e.g. 'How many times did we lose possession in the final third?') and get an instant, data-backed answer — so I can make tactical decisions without reviewing hours of footage.
+Acceptance Criteria
+Coach can type a free-text question about any uploaded match
+System retrieves relevant match data chunks via vector search (ChromaDB)
+LLM generates a response grounded strictly in retrieved data (no hallucination)
+Response includes the specific stat or event that answers the question
+Response delivered in < 5 seconds for 95% of queries
+If data is insufficient, system says so — never fabricates
+3.3 Feature Deep-Dive — F02: Player Performance Summary
+User Story
+As an academy trainer, I want an auto-generated performance card for each player after every session — so I can track development without spending 2 hours on spreadsheets.
+Acceptance Criteria
+System generates a per-player summary card on match upload completion
+Card includes: distance covered, pass accuracy, duels won/lost, key contributions
+AI narrative paragraph (2-3 sentences) summarising player's overall performance
+Cards are exportable as PDF per player
+Generation completes within 30 seconds of match upload
+4. System Architecture
+4.1 High-Level Architecture
+FOOTIQ SYSTEM ARCHITECTURE
+┌─────────────────────────────────────────────┐
+│         React + Tailwind Frontend           │
+│   Chat UI  |  Player Cards  |  Dashboards   │
+└──────────────────┬──────────────────────────┘
+                   │  REST API
+┌──────────────────▼──────────────────────────┐
+│           FastAPI Backend                   │
+│  /query  /upload  /report  /players         │
+└──────┬──────────────────┬───────────────────┘
+       │                  │
+┌──────▼──────┐    ┌──────▼──────────────────┐
+│  RAG Engine │    │  Computer Vision Module │
+│ LangChain + │    │  YOLOv8 + ByteTrack     │
+│ ChromaDB +  │    │  OpenCV Frame Extract   │
+│ Groq/OpenAI │    │  Heatmap Generation     │
+└──────┬──────┘    └──────┬──────────────────┘
+       └──────────────────┘
+              │  Data Layer
+┌─────────────▼───────────────────────────────┐
+│  StatsBomb JSONs | Player CSVs | ChromaDB  │
+│  Vector Embeddings | Video Clips           │
+└─────────────────────────────────────────────┘
+4.2 Tech Stack
+Layer
+Technology
+Justification
+Frontend
+React + Tailwind CSS
+Fast to build, clean UI, component reusability
+Backend
+FastAPI (Python)
+Aligns with existing skill set, async support, easy REST
+LLM
+Groq (Llama 3.1) / OpenAI GPT-4o
+Groq for speed & free tier; GPT-4o for accuracy
+RAG
+LangChain + ChromaDB
+Mature RAG framework, local vector DB for demo
+Embeddings
+OpenAI text-embedding-3-small
+Cost-effective, high quality for sports text
+Computer Vision
+YOLOv8 + OpenCV
+Leverages existing WCO Global CV experience
+Player Tracking
+ByteTrack
+State-of-art multi-object tracking across frames
+Data Source
+StatsBomb Open Data
+Free, real professional match data
+Hosting
+Render / Railway (free tier)
+Zero-cost demo deployment
+5. Risks & Mitigations
+Risk
+Impact
+Likelihood
+Mitigation
+Poor video quality → bad CV output
+High
+Medium
+Fallback to stats-only mode; flag low-quality input
+LLM hallucination on match data
+High
+Medium
+Strict RAG grounding; source citations in every answer
+Cold start — no match data uploaded
+Medium
+Low
+Pre-load 3 StatsBomb sample matches on first launch
+ChromaDB slow on large match datasets
+Medium
+Low
+Chunk size optimisation; limit to 5 matches in MVP
+Scope creep beyond MVP
+Medium
+High
+Feature freeze after F04; P2 features locked to v2.0
+LLM API costs exceed budget
+Low
+Medium
+Use Groq (free) for dev; token limits per query
+6. Build Timeline
+Phase
+Week
+Milestone
+Deliverable
+Phase 1
+Week 1
+PRD + Data Setup
+This document + StatsBomb data ingested into ChromaDB
+Phase 2
+Week 2
+Backend + RAG Q&A
+FastAPI running, /query endpoint live, answers grounded
+Phase 3
+Week 3
+Frontend + Player Cards
+React UI with chat interface + player summary cards
+Phase 4
+Week 4
+CV Pipeline
+YOLOv8 player detection + ByteTrack + heatmap overlay
+Phase 5
+Week 5
+Polish + Deploy
+Deployed on Render, Loom demo recorded, GitHub README done
+6.1 Portfolio Packaging Checklist
+GitHub repository with clean, documented README
+Live demo link (Render / Railway deployment)
+This PRD document (2-page PDF version for interviews)
+3-minute Loom walkthrough video
+LinkedIn post explaining product decisions and learnings
+Architecture diagram in README
+7. Appendix
+7.1 Glossary
+Term
+Definition
+RAG
+Retrieval-Augmented Generation — grounding LLM answers in retrieved documents
+ChromaDB
+Open-source local vector database for storing and searching embeddings
+LangChain
+Python framework for building LLM-powered applications and RAG pipelines
+YOLOv8
+State-of-the-art real-time object detection model used for player detection
+ByteTrack
+Multi-object tracking algorithm for tracking detected players across video frames
+StatsBomb
+Football data company providing free open-data match event datasets
+Embedding
+Numerical vector representation of text used for semantic similarity search
+Hallucination
+When an LLM generates plausible-sounding but factually incorrect information
+7.2 Out of Scope — MVP
+Live match real-time analysis (requires streaming infrastructure)
+Mobile native app (React web only for MVP)
+Multi-team / league management
+Payment / subscription features
+Social sharing or collaboration features

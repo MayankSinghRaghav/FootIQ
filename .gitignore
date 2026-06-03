@@ -1,0 +1,57 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Backend runtime data
+footiq-backend/uploads/
+footiq-backend/chroma_db/
+**/chroma_db/
+*.log
+
+# Computer vision / ML generated artifacts
+runs/
+**/runs/
+*.pt
+*.pth
+
+# Node / Vite frontend
+node_modules/
+footiq-frontend/node_modules/
+footiq-frontend/dist/
+footiq-frontend/build/
+*.tsbuildinfo
+.vite/
+
+# Package manager caches
+.npm/
+.pnpm-store/
+.yarn/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Local tooling
+.cursor/

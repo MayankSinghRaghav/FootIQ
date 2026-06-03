@@ -1,0 +1,23 @@
+[
+  {
+    "minute": 1,
+    "type": { "name": "Pass" },
+    "team": { "name": "Debug FC" },
+    "player": { "name": "Alice Debug" },
+    "pass": { "recipient": { "name": "Bob Debug" } }
+  },
+  {
+    "minute": 2,
+    "type": { "name": "Shot" },
+    "team": { "name": "Debug FC" },
+    "player": { "name": "Bob Debug" },
+    "shot": { "outcome": { "name": "Goal" } }
+  },
+  {
+    "minute": 3,
+    "type": { "name": "Duel" },
+    "team": { "name": "Debug FC" },
+    "player": { "name": "Alice Debug" },
+    "duel": { "outcome": { "name": "Won" } }
+  }
+]
