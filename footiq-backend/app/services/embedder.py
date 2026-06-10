@@ -63,7 +63,6 @@ def add_documents(documents):
             raise
         return len(new_docs)
     return 0
-    return 0
 
 def get_vector_count():
     try:

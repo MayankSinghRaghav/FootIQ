@@ -90,19 +90,7 @@ export default function App() {
   const [feed, setFeed] = useState<FeedMessage[]>(defaultFeed);
   const [players, setPlayers] = useState<PlayerCard[]>([]);
   const [error, setError] = useState("");
-
-  const debugLog = (
-    _runId: string,
-    _hypothesisId: string,
-    location: string,
-    message: string,
-    data: Record<string, unknown>
-  ) => {
-    if (import.meta.env.DEV) {
-      console.debug("[FootIQ]", location, message, data);
-    }
-  };
-
+
   const nav = [
     { label: "Command Center", icon: Activity },
     { label: "Match Analysis", icon: BrainCircuit, active: true },
@@ -120,12 +108,6 @@ export default function App() {
   };
 
   const onUploadFile = async (file: File) => {
-    debugLog("initial-run", "H1", "App.tsx:onUploadFile:start", "Upload flow started", {
-      matchId,
-      fileName: file?.name ?? "",
-      fileType: file?.type ?? "",
-    });
-
     if (!matchId.trim()) {
       setError("Enter Match ID before upload.");
       return;
@@ -149,12 +131,6 @@ export default function App() {
         body: formData,
       });
       const payload = await res.json();
-      debugLog("initial-run", "H1", "App.tsx:onUploadFile:response", "Upload response received", {
-        status: res.status,
-        ok: res.ok,
-        events_loaded: payload?.events_loaded ?? null,
-        chunks_created: payload?.chunks_created ?? null,
-      });
       if (!res.ok) {
         throw new Error(payload.detail || "Upload failed");
       }
@@ -167,9 +143,6 @@ export default function App() {
         },
       ]);
     } catch (err) {
-      debugLog("initial-run", "H1", "App.tsx:onUploadFile:error", "Upload flow failed", {
-        error: err instanceof Error ? err.message : "unknown",
-      });
       setError(err instanceof Error ? err.message : "Upload failed");
       setQueue([{ file: file.name, progress: 100, stage: "Upload aborted" }]);
     } finally {
@@ -178,11 +151,6 @@ export default function App() {
   };
 
   const sendQuery = async () => {
-    debugLog("initial-run", "H2", "App.tsx:sendQuery:start", "Query flow started", {
-      matchId,
-      queryLength: query.trim().length,
-    });
-
     if (!query.trim()) {
       return;
     }
@@ -202,12 +170,6 @@ export default function App() {
         body: JSON.stringify({ question: query.trim(), match_id: matchId, top_k: 5 }),
       });
       const payload = await res.json();
-      debugLog("initial-run", "H2", "App.tsx:sendQuery:response", "Query response received", {
-        status: res.status,
-        ok: res.ok,
-        answerLength: payload?.answer ? String(payload.answer).length : 0,
-        detail: payload?.detail ?? null,
-      });
       if (!res.ok) {
         throw new Error(payload.detail || "Query failed");
       }
@@ -220,9 +182,6 @@ export default function App() {
       setFeed((prev) => [...prev, botMsg]);
       setQuery("");
     } catch (err) {
-      debugLog("initial-run", "H2", "App.tsx:sendQuery:error", "Query flow failed", {
-        error: err instanceof Error ? err.message : "unknown",
-      });
       setError(err instanceof Error ? err.message : "Query failed");
     } finally {
       setQuerying(false);
@@ -230,8 +189,6 @@ export default function App() {
   };
 
   const fetchPlayers = async () => {
-    debugLog("initial-run", "H3", "App.tsx:fetchPlayers:start", "Players flow started", { matchId });
-
     if (!matchId.trim()) {
       setError("Enter Match ID first.");
       return;
@@ -241,20 +198,11 @@ export default function App() {
     try {
       const res = await fetch(`${API_BASE}/players/${encodeURIComponent(matchId)}?limit=6`);
       const payload = await res.json();
-      debugLog("initial-run", "H3", "App.tsx:fetchPlayers:response", "Players response received", {
-        status: res.status,
-        ok: res.ok,
-        count: Array.isArray(payload?.players) ? payload.players.length : 0,
-        detail: payload?.detail ?? null,
-      });
       if (!res.ok) {
         throw new Error(payload.detail || "Failed to load players");
       }
       setPlayers(payload.players ?? []);
     } catch (err) {
-      debugLog("initial-run", "H3", "App.tsx:fetchPlayers:error", "Players flow failed", {
-        error: err instanceof Error ? err.message : "unknown",
-      });
       setError(err instanceof Error ? err.message : "Failed to load players");
     } finally {
       setLoadingPlayers(false);
@@ -262,18 +210,11 @@ export default function App() {
   };
 
   const fetchHistory = async () => {
-    debugLog("initial-run", "H4", "App.tsx:fetchHistory:start", "History flow started", {});
     setError("");
     setLoadingHistory(true);
     try {
       const res = await fetch(`${API_BASE}/history?limit=6`);
       const payload = await res.json();
-      debugLog("initial-run", "H4", "App.tsx:fetchHistory:response", "History response received", {
-        status: res.status,
-        ok: res.ok,
-        count: Array.isArray(payload?.items) ? payload.items.length : 0,
-        detail: payload?.detail ?? null,
-      });
       if (!res.ok) {
         throw new Error(payload.detail || "Failed to load history");
       }
@@ -289,9 +230,6 @@ export default function App() {
         setFeed(historyMessages);
       }
     } catch (err) {
-      debugLog("initial-run", "H4", "App.tsx:fetchHistory:error", "History flow failed", {
-        error: err instanceof Error ? err.message : "unknown",
-      });
       setError(err instanceof Error ? err.message : "Failed to load history");
     } finally {
       setLoadingHistory(false);
