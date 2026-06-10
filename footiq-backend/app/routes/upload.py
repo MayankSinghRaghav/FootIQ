@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.concurrency import run_in_threadpool
 
 from app.models.schemas import UploadResponse
 from app.services.embedder import add_documents
@@ -26,7 +27,7 @@ async def upload_match_data(match_id: str, file: UploadFile = File(...)):
 
     chunks = parse_events_to_chunks(events=events, match_id=match_id)
     try:
-        chunks_created = add_documents(chunks)
+        chunks_created = await run_in_threadpool(add_documents, chunks)
     except ValueError as e:
         if "authentication" in str(e).lower() or "api key" in str(e).lower():
             raise HTTPException(status_code=502, detail="Gemini API authentication failed. Check GEMINI_API_KEY in your .env file.")

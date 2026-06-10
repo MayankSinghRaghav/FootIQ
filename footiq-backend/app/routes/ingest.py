@@ -2,6 +2,7 @@ import time
 import logging
 import os
 from fastapi import APIRouter
+from fastapi.concurrency import run_in_threadpool
 from app.models.schemas import IngestResponse
 from app.services.loader import load_all_matches
 from app.services.embedder import add_documents
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/ingest", response_model=IngestResponse)
-def ingest_data():
+async def ingest_data():
     start_time = time.time()
     
     chunks, matches_loaded = load_all_matches(DATA_DIR)
@@ -26,7 +27,7 @@ def ingest_data():
             time_ms=int((time.time() - start_time) * 1000)
         )
         
-    chunks_created = add_documents(chunks)
+    chunks_created = await run_in_threadpool(add_documents, chunks)
 
     # Refresh in-memory events for player summary/report endpoints.
     if os.path.isdir(DATA_DIR):

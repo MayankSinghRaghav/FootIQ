@@ -219,12 +219,14 @@ export default function App() {
         throw new Error(payload.detail || "Failed to load history");
       }
 
-      const historyMessages: FeedMessage[] = (payload.items ?? []).map(
-        (item: { question: string; answer: string; timestamp_utc: string }, idx: number) => ({
-          role: idx % 2 === 0 ? "bot" : "manager",
-          content: idx % 2 === 0 ? item.answer : item.question,
-          time: new Date(item.timestamp_utc).toLocaleTimeString("en-GB", { hour12: false }),
-        })
+      const historyMessages: FeedMessage[] = (payload.items ?? []).flatMap(
+        (item: { question: string; answer: string; timestamp_utc: string }) => {
+          const time = new Date(item.timestamp_utc).toLocaleTimeString("en-GB", { hour12: false });
+          return [
+            { role: "manager" as const, content: item.question, time },
+            { role: "bot" as const, content: item.answer, time },
+          ];
+        }
       );
       if (historyMessages.length) {
         setFeed(historyMessages);
