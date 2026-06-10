@@ -2,10 +2,7 @@ fastapi
 uvicorn
 langchain
 langchain-community
-langchain-openai
 chromadb
-groq
-openai
 pydantic
 python-dotenv
 pytest

@@ -54,7 +54,7 @@ const defaultFeed: FeedMessage[] = [
   },
 ];
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = (import.meta.env.VITE_API_BASE as string) ?? "http://localhost:8000";
 
 function Radar({ stats, color }: { stats: [number, number, number, number, number]; color: string }) {
   const points = useMemo(() => {

@@ -28,8 +28,8 @@ async def upload_match_data(match_id: str, file: UploadFile = File(...)):
     try:
         chunks_created = add_documents(chunks)
     except ValueError as e:
-        if str(e) == "OpenAI embeddings authentication failed":
-            raise HTTPException(status_code=502, detail="OpenAI embeddings authentication failed. Update OPENAI_API_KEY in backend .env.")
+        if "authentication" in str(e).lower() or "api key" in str(e).lower():
+            raise HTTPException(status_code=502, detail="Gemini API authentication failed. Check GEMINI_API_KEY in your .env file.")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Upload indexing failed")

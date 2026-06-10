@@ -2,7 +2,7 @@ import os
 import uuid
 import shutil
 import logging
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, HTTPException
 from app.services.cv_service import start_video_processing, get_status
 
 logger = logging.getLogger(__name__)

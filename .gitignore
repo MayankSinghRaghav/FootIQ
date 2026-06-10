@@ -1,11 +1,14 @@
 # Environment and secrets
 .env
+.env.local
+.env.production
 .env.*
 !.env.example
 !.env.*.example
 
 # Python
 __pycache__/
+*.pyc
 *.py[cod]
 *$py.class
 .Python
@@ -22,6 +25,8 @@ env/
 ENV/
 
 # Backend runtime data
+chroma_db/
+uploads/
 footiq-backend/uploads/
 footiq-backend/chroma_db/
 **/chroma_db/
