@@ -58,9 +58,7 @@ def add_documents(documents):
         return len(new_docs)
     return 0
 
-def get_vector_count():
-    try:
-        vector_store = get_vector_store()
-        return vector_store._collection.count()
-    except Exception:
-        return 0
+def get_vector_count() -> int:
+    """Returns the number of indexed vectors. Raises on ChromaDB failure (let callers decide how to handle)."""
+    vector_store = get_vector_store()
+    return vector_store._collection.count()

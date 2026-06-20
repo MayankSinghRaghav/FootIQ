@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: footiq-backend
+    runtime: python
+    rootDir: footiq-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: ALLOWED_ORIGINS
+        sync: false          # set to your Vercel frontend URL, e.g. https://footiq.vercel.app
+      - key: CHROMA_PATH
+        value: ./chroma_db
+      - key: DATA_DIR
+        value: ./data
+
+# NOTE: The 'disk' block below requires a Render paid plan (~$0.25/GB/month).
+# Without it, ChromaDB data is stored on ephemeral disk and is lost on each
+# restart or deploy. Remove the comments to enable persistent storage.
+#
+#   disk:
+#     name: footiq-chroma
+#     mountPath: /opt/render/project/src/chroma_db
+#     sizeGB: 1

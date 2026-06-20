@@ -13,6 +13,10 @@ router = APIRouter()
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_match_data(match_id: str, file: UploadFile = File(...)):
+    if not match_id or not match_id.strip():
+        raise HTTPException(status_code=422, detail="match_id cannot be empty")
+    match_id = match_id.strip()
+
     if not file.filename.lower().endswith(".json"):
         raise HTTPException(status_code=400, detail="Only JSON files are supported")
 
