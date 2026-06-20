@@ -115,15 +115,16 @@ def run_cv_pipeline(task_id: str, video_path: str):
             for i in range(1, len(points)):
                 x1, y1 = points[i-1]
                 x2, y2 = points[i]
-                # Distance in normalized units
+                # Distance in normalized units (0-100 scale per frame)
                 dist = ((x2 - x1)**2 + (y2 - y1)**2)**0.5
-                if dist > 8.0: # threshold for sprint
+                if dist > 8.0:  # threshold for sprint in normalized coords
                     sprint_count += 1
             if sprint_count > 0:
                 sprints.append({
                     "track_id": int(track_id),
                     "sprint_count": sprint_count,
-                    "max_speed_kmh": round(25.0 + (sprint_count * 1.5), 1)
+                    # km/h cannot be computed without camera calibration (pixel-to-metre
+                    # mapping and frame rate). sprint_count is the only reliable metric here.
                 })
 
         processing_time = round(time.time() - start_time, 2)

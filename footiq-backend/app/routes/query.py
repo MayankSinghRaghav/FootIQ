@@ -30,8 +30,9 @@ def query_match_data(request: QueryRequest):
             match_id=request.match_id,
             top_k=top_k
         )
-        # Log basic details
-        logger.info(f"query='{question}' match_id={request.match_id} latency_ms={response.processing_time_ms} chunks={len(response.sources)}")
+        # Log metadata only; question content is kept out of production logs
+        logger.info(f"match_id={request.match_id} latency_ms={response.processing_time_ms} chunks={len(response.sources)}")
+        logger.debug(f"query='{question}'")
         add_session_history(
             {
                 "question": question,

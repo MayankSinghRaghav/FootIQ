@@ -36,23 +36,6 @@ type PlayerCard = {
   fouls_won: number;
 };
 
-const defaultFeed: FeedMessage[] = [
-  {
-    role: "bot",
-    content: "Observation: Opponent is exploiting the wide-left channel. Shift block deeper.",
-    time: "12:44:02",
-  },
-  {
-    role: "manager",
-    content: "Show me touches by #11 in Zone 4 during the last 15 minutes.",
-    time: "12:44:15",
-  },
-  {
-    role: "bot",
-    content: "Heatmap generated. 72% of touches occurred in Zone 4. High threat level detected.",
-    time: "12:44:20",
-  },
-];
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) ?? "http://localhost:8000";
 
@@ -80,17 +63,17 @@ function Radar({ stats, color }: { stats: [number, number, number, number, numbe
 }
 
 export default function App() {
-  const [matchId, setMatchId] = useState("3788741");
+  const [matchId, setMatchId] = useState("");
   const [query, setQuery] = useState("");
   const [uploading, setUploading] = useState(false);
   const [querying, setQuerying] = useState(false);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [feed, setFeed] = useState<FeedMessage[]>(defaultFeed);
+  const [feed, setFeed] = useState<FeedMessage[]>([]);
   const [players, setPlayers] = useState<PlayerCard[]>([]);
   const [error, setError] = useState("");
-
+
   const nav = [
     { label: "Command Center", icon: Activity },
     { label: "Match Analysis", icon: BrainCircuit, active: true },
@@ -376,8 +359,7 @@ export default function App() {
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="font-mono text-xs uppercase tracking-[0.2em] text-[#00d1ff]">Tactical Pitch Visualizer</h3>
                 <div className="flex gap-2 font-mono text-xs uppercase">
-                  <span className="rounded border border-white/20 px-3 py-1">4-3-3 Attack</span>
-                  <span className="rounded border border-white/20 px-3 py-1">High Press</span>
+                  <span className="rounded border border-white/20 px-3 py-1 text-white/40">Pitch View</span>
                 </div>
               </div>
               <div className="relative h-80 rounded-lg border border-[#00ff41]/25 bg-[#021508]">
@@ -398,9 +380,6 @@ export default function App() {
                   <line x1="160" y1="120" x2="270" y2="180" stroke="#00d1ff" strokeWidth="2" />
                   <line x1="470" y1="300" x2="620" y2="220" stroke="#00d1ff" strokeWidth="2" />
                 </svg>
-                <div className="absolute left-4 top-4 rounded border border-white/20 bg-black/50 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em]">
-                  Sprint: 34.2 km/h
-                </div>
               </div>
             </section>
 
@@ -410,6 +389,13 @@ export default function App() {
                 <Waves size={14} className="text-[#00d1ff]" />
               </div>
               <div className="space-y-3">
+                {feed.length === 0 && (
+                  <div className="rounded-md border border-white/10 bg-black/30 p-3">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">
+                      Upload a match JSON and ask a question to begin.
+                    </p>
+                  </div>
+                )}
                 {feed.map((msg, idx) => (
                   <div
                     key={`${msg.time}-${idx}`}
@@ -452,12 +438,10 @@ export default function App() {
             <section className="glass-panel col-span-2 rounded-xl p-4">
               <h3 className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-[#00d1ff]">Live Alerts</h3>
               <div className="space-y-3">
-                {["Stamina drop on LB", "Press trigger effective", "Set-piece xG +0.18"].map((alert, idx) => (
-                  <div key={alert} className="rounded border border-white/10 bg-black/40 p-2">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/60">{42 - idx * 6}'</p>
-                    <p className="mt-1 text-xs text-white/90">{alert}</p>
-                  </div>
-                ))}
+                <div className="rounded border border-white/10 bg-black/40 p-2">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">No alerts yet</p>
+                  <p className="mt-1 text-xs text-white/60">Alerts will appear as you query match data.</p>
+                </div>
               </div>
             </section>
           </div>

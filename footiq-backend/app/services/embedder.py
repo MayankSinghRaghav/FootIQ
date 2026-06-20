@@ -8,13 +8,7 @@ from app.config import CHROMA_PATH, GEMINI_API_KEY
 logger = logging.getLogger(__name__)
 
 # Initialize ChromaDB client
-try:
-    chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-except Exception as e:
-    logger.error(f"Failed to initialize ChromaDB: {e}")
-    # We will let the collection auto-create when needed, but if folder is corrupted:
-    # in a real scenario we might wipe it.
-    chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 
 # Note: Using Gemini text-embedding-004
 embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004", google_api_key=GEMINI_API_KEY)

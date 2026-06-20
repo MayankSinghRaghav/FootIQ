@@ -23,4 +23,5 @@ def add_session_history(item: dict) -> None:
 def get_session_history(limit: int = 50) -> List[dict]:
     if limit <= 0:
         return []
-    return SESSION_HISTORY[-limit:][::-1]
+    # Return chronological order (oldest first) so the feed renders top-to-bottom correctly
+    return SESSION_HISTORY[-limit:]

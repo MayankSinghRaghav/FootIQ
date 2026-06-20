@@ -10,6 +10,9 @@ def read_events_from_file(file_path: str):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             events = json.load(f)
+    except (IOError, OSError) as e:
+        logger.error(f"Cannot read file {file_path}: {e}")
+        return []
     except json.JSONDecodeError:
         logger.error(f"Malformed JSON in file: {file_path}")
         return []
