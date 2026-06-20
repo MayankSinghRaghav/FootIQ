@@ -1,10 +1,13 @@
 import os
-import cv2
 import json
 import logging
 import time
 from threading import Thread
-from ultralytics import YOLO
+
+# NOTE: cv2 (opencv) and ultralytics (PyTorch) are intentionally NOT imported at
+# module load. They pull in ~1GB of native/ML deps that would OOM small instances
+# (e.g. Render's 512MB free tier) at startup. They are imported lazily, only when
+# a video is actually processed — see get_yolo_model() and run_cv_pipeline().
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,8 @@ def get_yolo_model():
     global _model
     if _model is None:
         logger.info("Loading YOLOv8 model...")
+        # Imported lazily — keeps PyTorch out of memory until video CV is used.
+        from ultralytics import YOLO
         # Use nano model for quick CPU inference
         _model = YOLO("yolov8n.pt")
     return _model
@@ -47,6 +52,7 @@ def run_cv_pipeline(task_id: str, video_path: str):
     update_status(task_id, status_data)
 
     try:
+        import cv2  # lazy import — see module note
         model = get_yolo_model()
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -115,15 +121,16 @@ def run_cv_pipeline(task_id: str, video_path: str):
             for i in range(1, len(points)):
                 x1, y1 = points[i-1]
                 x2, y2 = points[i]
-                # Distance in normalized units
+                # Distance in normalized units (0-100 scale per frame)
                 dist = ((x2 - x1)**2 + (y2 - y1)**2)**0.5
-                if dist > 8.0: # threshold for sprint
+                if dist > 8.0:  # threshold for sprint in normalized coords
                     sprint_count += 1
             if sprint_count > 0:
                 sprints.append({
                     "track_id": int(track_id),
                     "sprint_count": sprint_count,
-                    "max_speed_kmh": round(25.0 + (sprint_count * 1.5), 1)
+                    # km/h cannot be computed without camera calibration (pixel-to-metre
+                    # mapping and frame rate). sprint_count is the only reliable metric here.
                 })
 
         processing_time = round(time.time() - start_time, 2)

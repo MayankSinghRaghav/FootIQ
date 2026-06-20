@@ -25,7 +25,6 @@ async def lifespan(app: FastAPI):
 
     # Load raw events in memory to support player summary/report endpoints.
     # This keeps the MVP simple and avoids introducing a DB dependency at this stage.
-    import os
     from app.services.loader import read_events_from_file
 
     if os.path.isdir(DATA_DIR):
