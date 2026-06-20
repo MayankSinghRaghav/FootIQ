@@ -1,10 +1,13 @@
 import os
-import cv2
 import json
 import logging
 import time
 from threading import Thread
-from ultralytics import YOLO
+
+# NOTE: cv2 (opencv) and ultralytics (PyTorch) are intentionally NOT imported at
+# module load. They pull in ~1GB of native/ML deps that would OOM small instances
+# (e.g. Render's 512MB free tier) at startup. They are imported lazily, only when
+# a video is actually processed — see get_yolo_model() and run_cv_pipeline().
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,8 @@ def get_yolo_model():
     global _model
     if _model is None:
         logger.info("Loading YOLOv8 model...")
+        # Imported lazily — keeps PyTorch out of memory until video CV is used.
+        from ultralytics import YOLO
         # Use nano model for quick CPU inference
         _model = YOLO("yolov8n.pt")
     return _model
@@ -47,6 +52,7 @@ def run_cv_pipeline(task_id: str, video_path: str):
     update_status(task_id, status_data)
 
     try:
+        import cv2  # lazy import — see module note
         model = get_yolo_model()
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
