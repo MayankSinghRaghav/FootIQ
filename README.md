@@ -1,171 +1,212 @@
 <div align="center">
 
-# ⚽ FootIQ
+<br/>
+
+```
+███████╗ ██████╗  ██████╗ ████████╗██╗ ██████╗
+██╔════╝██╔═══██╗██╔═══██╗╚══██╔══╝██║██╔═══██╗
+█████╗  ██║   ██║██║   ██║   ██║   ██║██║   ██║
+██╔══╝  ██║   ██║██║   ██║   ██║   ██║██║▄▄ ██║
+██║     ╚██████╔╝╚██████╔╝   ██║   ██║╚██████╔╝
+╚═╝      ╚═════╝  ╚═════╝    ╚═╝   ╚═╝ ╚══▀▀═╝
+```
 
 ### Tactical Intelligence from Real Match Data
 
-**Upload StatsBomb match data → ask an AI coach anything → get grounded, factual answers.**
+*Upload StatsBomb JSON → ask your AI coach anything → get grounded, real answers*
 
-FootIQ is a full-stack football analytics platform that turns raw match-event JSON into a
-conversational analytics experience. It pairs a **Retrieval-Augmented Generation (RAG)** pipeline
-(Google Gemini + ChromaDB) with a multi-page React dashboard, plus an optional computer-vision
-module (YOLOv8) for video tracking.
+<br/>
 
-[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Frontend](https://img.shields.io/badge/Frontend-React_19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![LLM](https://img.shields.io/badge/AI-Google_Gemini-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
-[![Vectors](https://img.shields.io/badge/Vectors-ChromaDB-FFB000)](https://www.trychroma.com/)
-[![Deploy](https://img.shields.io/badge/Deploy-Render_%2B_Vercel-000000)](./DEPLOYMENT.md)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Gemini](https://img.shields.io/badge/AI-Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![ChromaDB](https://img.shields.io/badge/Vectors-ChromaDB-FFB000?style=for-the-badge)](https://www.trychroma.com/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com/)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+
+<br/>
 
 </div>
 
 ---
 
-## 📑 Table of Contents
+## What is FootIQ?
 
-- [What It Does](#-what-it-does)
-- [Architecture](#-architecture)
-- [How a Question Gets Answered (RAG Flow)](#-how-a-question-gets-answered-rag-flow)
-- [Upload & Query Sequences](#-upload--query-sequences)
+FootIQ is a **full-stack football analytics platform** built on a Retrieval-Augmented Generation (RAG) pipeline. It turns raw StatsBomb match-event data into a conversational analytics experience — coaches can upload a match file and immediately ask natural-language questions like *"who had the best pass accuracy?"* or *"which player created the most chances?"* and get answers sourced **only** from the real match data.
+
+> 🔒 **Honesty by design.** The AI is system-prompted to say *"I don't have enough match data to answer this"* rather than fabricate statistics. Every answer is traceable to a retrieved event chunk.
+
+---
+
+## Table of Contents
+
+- [Core Features](#-core-features)
+- [System Architecture](#-system-architecture)
+- [RAG Pipeline — How a Question Gets Answered](#-rag-pipeline--how-a-question-gets-answered)
+- [Upload Workflow](#-upload-workflow)
+- [Query Workflow](#-query-workflow)
 - [Frontend Page Map](#-frontend-page-map)
+- [Data Flow — End to End](#-data-flow--end-to-end)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
-- [Getting Started (Local)](#-getting-started-local)
+- [Local Setup](#-local-setup)
 - [Testing the Code](#-testing-the-code)
 - [API Reference](#-api-reference)
 - [Deployment](#-deployment)
 - [Environment Variables](#-environment-variables)
-- [Limitations & Roadmap](#-limitations--roadmap)
+- [Known Limitations](#-known-limitations)
 
 ---
 
-## 🎯 What It Does
+## ✨ Core Features
 
-| Capability | Description |
-|-----------|-------------|
-| 📥 **Ingest** | Upload [StatsBomb-format](https://github.com/statsbomb/open-data) match-event JSON. FootIQ parses, chunks, and embeds it into a vector store. |
-| 💬 **Ask** | Ask natural-language questions ("Who created the most chances?"). Gemini answers **only** from your indexed match data — no hallucinated stats. |
-| 📊 **Squad Stats** | Auto-derived player cards: passes, pass accuracy, shots, goals, dribbles, duels, fouls — computed directly from event data. |
-| 🕘 **History** | Every Q&A exchange is stored and replayable in a chronological feed. |
-| 🎥 **Video (optional)** | Upload match footage → YOLOv8 tracks players → returns movement heatmaps and sprint counts. *(Requires ≥2 GB RAM.)* |
-
-> 🔒 **Honesty by design:** the AI is system-prompted to answer *only* from retrieved context and to
-> say "I don't have enough match data to answer this" rather than fabricate. No fake metrics are
-> ever shown in the UI.
+| Feature | Description |
+|---------|-------------|
+| 📥 **Match Ingestion** | Upload any [StatsBomb-format](https://github.com/statsbomb/open-data) JSON. FootIQ parses events, chunks them with metadata, embeds via Gemini, and indexes into ChromaDB. |
+| 🤖 **AI Coach** | Ask anything in plain English. Answers are generated by Gemini 1.5 Flash, grounded strictly to the retrieved match context. No hallucinated stats. |
+| 📊 **Player Cards** | Pass accuracy, shots, goals, dribbles completed, duels won/lost, fouls — all derived in real time from the event stream. |
+| 🕘 **Session History** | Every Q&A exchange is stored chronologically and replayable across sessions. |
+| 🩺 **Health Dashboard** | Live backend health check: ChromaDB connectivity, vector count, indexed collections. |
+| 🎥 **Video Tracking** *(optional)* | Upload match footage → YOLOv8 tracks players frame-by-frame → movement heatmaps + sprint counts returned. Requires ≥ 2 GB RAM. |
 
 ---
 
-## 🏗 Architecture
+## 🏗 System Architecture
 
 ```mermaid
-flowchart LR
-    subgraph Client["🖥️ Frontend — Vercel"]
-        UI["React 19 + Vite<br/>Dashboard · AI Coach · History · Settings"]
+flowchart TB
+    subgraph FE["🖥️  Frontend  ·  Vercel"]
+        direction TB
+        LP["Landing Page"]
+        DB["Dashboard\n(Upload · Pitch · Q&A · Player Cards)"]
+        AI["AI Coach\n(Full-screen chat)"]
+        HI["History\n(Past Q&A)"]
+        SE["Settings\n(Health check)"]
+        LP --> DB
+        DB <--> AI
+        DB --> HI
+        DB --> SE
     end
 
-    subgraph Server["⚙️ Backend — Render (FastAPI)"]
-        API["REST API<br/>/upload · /query · /players · /history · /health"]
-        RAG["RAG Engine<br/>(LangChain)"]
-        CV["CV Service<br/>(YOLOv8 · lazy-loaded)"]
-        STORE["In-memory<br/>event store"]
+    subgraph BE["⚙️  Backend  ·  Render (FastAPI)"]
+        direction TB
+        API["REST API Layer\n/upload · /query · /players\n/history · /health · /video"]
+        RAG["RAG Engine\n(LangChain)"]
+        ANA["Analytics\n(StatsBomb parser)"]
+        CV["CV Service\n(YOLOv8 — lazy-loaded)"]
+        MEM["In-memory Store\n(events · session history)"]
+        API --> RAG
+        API --> ANA
+        API --> CV
+        API --> MEM
     end
 
-    subgraph External["☁️ External Services"]
-        GEMINI["Google Gemini<br/>embeddings + chat"]
-        CHROMA[("ChromaDB<br/>vector store")]
+    subgraph EXT["☁️  External Services"]
+        GEM["Google Gemini\ntext-embedding-004\ngemini-1.5-flash"]
+        CHR[("ChromaDB\nVector Store")]
     end
 
-    UI -- "HTTPS / JSON" --> API
-    API --> RAG
-    API --> CV
-    API --> STORE
-    RAG -- "embed + generate" --> GEMINI
-    RAG -- "similarity search" --> CHROMA
-    API -- "index chunks" --> CHROMA
+    FE -- "HTTPS · JSON" --> BE
+    RAG -- "embed + generate" --> GEM
+    RAG -- "similarity search" --> CHR
+    API -- "store chunks" --> CHR
 
-    style Client fill:#0b2942,stroke:#00e0ff,color:#fff
-    style Server fill:#14213d,stroke:#00ff41,color:#fff
-    style External fill:#2a1a3d,stroke:#bb86fc,color:#fff
+    style FE fill:#0a1628,stroke:#00e0ff,color:#e0f0ff
+    style BE fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style EXT fill:#1a0d2e,stroke:#bb86fc,color:#f0e0ff
 ```
 
 ---
 
-## 🔁 How a Question Gets Answered (RAG Flow)
+## 🔁 RAG Pipeline — How a Question Gets Answered
 
 ```mermaid
 flowchart TD
-    A["👤 Coach asks a question"] --> B["POST /query"]
-    B --> C{"Match data<br/>indexed?"}
-    C -- No --> Z["503 — 'No match data'"]
-    C -- Yes --> D["Embed question<br/>(text-embedding-004)"]
-    D --> E["Vector similarity search<br/>in ChromaDB (top-k chunks)"]
-    E --> F["Build grounded prompt<br/>(system rules + retrieved context)"]
-    F --> G["Gemini 1.5 Flash<br/>generates answer"]
-    G --> H["Compute confidence<br/>from L2 distances"]
-    H --> I["Store in session history"]
-    I --> J["✅ Return answer + sources + confidence"]
+    Q(["👤 Coach asks:\n'Who scored?'"])
+    Q --> V["1. Embed question\nGemini text-embedding-004\n→ 768-dim vector"]
+    V --> S["2. Similarity search\nChromaDB — cosine distance\ntop-k most relevant event chunks"]
+    S --> P["3. Build grounded prompt\n─────────────────────\nSYSTEM: Answer ONLY from context.\nDo not fabricate statistics.\n─────────────────────\nCONTEXT: [retrieved chunks]\nQUESTION: Who scored?"]
+    P --> G["4. Gemini 1.5 Flash\ngenerates answer"]
+    G --> C["5. Compute confidence\n1 − (avg L2 distance / 2)"]
+    C --> H["6. Save to session history"]
+    H --> R(["✅ Return to frontend\nanswer · confidence · sources"])
 
-    style A fill:#003049,color:#fff
-    style J fill:#1b4332,color:#fff
-    style Z fill:#5a1e1e,color:#fff
-```
+    ND{"No data\nin ChromaDB?"}
+    Q --> ND
+    ND -- Yes --> E(["❌ 503\n'No match data in ChromaDB'"])
+    ND -- No --> V
 
-The system prompt enforces grounding:
-
-```text
-Answer ONLY using the match data provided in the context below.
-If the answer is not in the context, say:
-  'I don't have enough match data to answer this.'
-Never guess or fabricate statistics.
+    style Q fill:#003049,color:#fff,stroke:#00e0ff
+    style R fill:#1b4332,color:#fff,stroke:#00ff41
+    style E fill:#4a1515,color:#fff,stroke:#ff4444
+    style P fill:#1a1a2e,color:#e0e0ff,stroke:#bb86fc
 ```
 
 ---
 
-## 📡 Upload & Query Sequences
-
-**Uploading a match:**
+## 📤 Upload Workflow
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant API as FastAPI
-    participant E as Embedder
-    participant G as Gemini
-    participant C as ChromaDB
+    actor Coach
+    participant FE as React Frontend
+    participant API as FastAPI /upload
+    participant LDR as Loader Service
+    participant EMB as Embedder Service
+    participant GEM as Google Gemini
+    participant CHR as ChromaDB
 
-    U->>F: Select match JSON + match_id
-    F->>API: POST /upload?match_id=...
-    API->>API: Validate match_id & JSON
-    API->>E: parse_events_to_chunks()
-    E->>G: embed chunks (text-embedding-004)
-    G-->>E: vectors
-    E->>C: store vectors (dedup by id)
-    API-->>F: { events_loaded, chunks_created }
-    F-->>U: "Match indexed successfully ✅"
+    Coach->>FE: Select match.json + enter match_id
+    FE->>API: POST /upload?match_id=demo (multipart)
+    API->>API: Validate match_id (non-empty, trimmed)
+    API->>API: Validate file is .json, parse JSON array
+    API->>LDR: parse_events_to_chunks(events, match_id)
+    LDR-->>API: List[Document] with metadata
+    API->>EMB: add_documents(chunks)
+    EMB->>EMB: Deduplicate by chunk id
+    EMB->>GEM: Batch embed new chunks (text-embedding-004)
+    GEM-->>EMB: Float vectors
+    EMB->>CHR: Upsert vectors + metadata
+    CHR-->>EMB: OK
+    EMB-->>API: chunks_created count
+    API->>API: save_match_events (in-memory)
+    API-->>FE: { match_id, events_loaded, chunks_created, message }
+    FE-->>Coach: "Match indexed successfully ✅"
 ```
 
-**Asking a question:**
+---
+
+## 🔍 Query Workflow
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant API as FastAPI
-    participant R as RAG Engine
-    participant C as ChromaDB
-    participant G as Gemini
+    actor Coach
+    participant FE as React Frontend
+    participant API as FastAPI /query
+    participant RAG as RAG Engine
+    participant CHR as ChromaDB
+    participant GEM as Google Gemini
+    participant STO as Session Store
 
-    U->>F: "Who scored?"
-    F->>API: POST /query { match_id, question }
-    API->>R: answer_query()
-    R->>C: similarity search (top-k)
-    C-->>R: relevant event chunks
-    R->>G: grounded prompt → generate
-    G-->>R: answer
-    R-->>API: answer + confidence + sources
-    API-->>F: QueryResponse
-    F-->>U: Render answer in chat
+    Coach->>FE: "Who had the best pass accuracy?"
+    FE->>API: POST /query { match_id, question, top_k }
+    API->>API: Validate question (non-empty, ≤1000 chars)
+    API->>API: Cap top_k (1–20)
+    API->>RAG: answer_query(question, match_id, top_k)
+    RAG->>CHR: count() — check data exists
+    CHR-->>RAG: vector count
+    RAG->>GEM: embed question → vector
+    GEM-->>RAG: query vector
+    RAG->>CHR: similarity_search_with_score(vector, top_k)
+    CHR-->>RAG: [(Document, L2_score), ...]
+    RAG->>RAG: Build grounded prompt with context
+    RAG->>GEM: ChatGoogleGenerativeAI.invoke(prompt)
+    GEM-->>RAG: answer text
+    RAG->>RAG: Compute confidence from L2 distances
+    RAG-->>API: QueryResponse
+    API->>STO: add_session_history(exchange)
+    API-->>FE: { answer, confidence, sources, processing_time_ms }
+    FE-->>Coach: Render answer in chat feed
 ```
 
 ---
@@ -174,32 +215,99 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    Landing["/ — Landing Page<br/>(marketing entry)"] --> Dash["/dashboard<br/>Upload · Pitch · Q&A · Player Cards"]
-    Dash <--> Coach["/coach<br/>Full-screen AI chat<br/>(shared conversation)"]
-    Dash --> Hist["/history<br/>Past Q&A sessions"]
-    Dash --> Set["/settings<br/>API config + health check"]
+    subgraph App["React App  (BrowserRouter)"]
+        direction TB
+        LAND["/ — Landing Page\n──────────────────\n• Hero with CTA\n• Feature cards\n• Tech stack footer\n⚠ NOT wrapped in Layout"]
 
-    style Landing fill:#0b2942,stroke:#00e0ff,color:#fff
-    style Dash fill:#14213d,stroke:#00ff41,color:#fff
-    style Coach fill:#14213d,stroke:#00ff41,color:#fff
-    style Hist fill:#14213d,stroke:#00ff41,color:#fff
-    style Set fill:#14213d,stroke:#00ff41,color:#fff
+        subgraph Layout["Layout (Sidebar + Outlet)"]
+            DASH["/dashboard\n──────────────\n• Match ID input\n• File upload zone\n• Processing queue\n• Pitch visualizer SVG\n• Q&A chat panel\n• Player cards grid"]
+            COACH["/coach\n──────────────\n• Full-screen chat\n• Suggestion chips\n• Shared feed state\n  with Dashboard\n• Clear conversation"]
+            HIST["/history\n──────────────\n• Load History btn\n• Grouped Q&A cards\n• Timestamp + match_id\n• Separate from feed"]
+            SET["/settings\n──────────────\n• API endpoint info\n• Live /health fetch\n• Raw JSON preview\n• Refresh button"]
+        end
+
+        LAND --> DASH
+        DASH <-->|"shared feed\nvia MatchContext"| COACH
+        DASH --> HIST
+        DASH --> SET
+    end
+
+    CTX["MatchContext\n(React Context)\n──────────────────\nmatchId → localStorage\nfeed · historyItems\nplayers · queue\nerror · loading flags\nonUploadFile()\nsendQuery()\nfetchPlayers()\nfetchHistory()\nclearFeed()"]
+
+    Layout --- CTX
+
+    style LAND fill:#0b1e36,stroke:#00e0ff,color:#e0f0ff
+    style DASH fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style COACH fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style HIST fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style SET fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style CTX fill:#1a0d2e,stroke:#bb86fc,color:#f0e0ff
 ```
 
-State is shared across pages via a React Context (`MatchContext`); the active `match_id` persists in
-`localStorage` so it survives navigation and refreshes.
+---
+
+## 🌊 Data Flow — End to End
+
+```mermaid
+flowchart LR
+    JSON["📄 StatsBomb\nMatch JSON"]
+
+    subgraph Ingest["Ingest Pipeline"]
+        P1["parse_events_to_chunks()\nSlice events into\ntext chunks with metadata\n(match_id, minute, team,\nplayer, event_type)"]
+        P2["GoogleGenerativeAIEmbeddings\ntext-embedding-004\n768-dim dense vectors"]
+        P3["ChromaDB\nPersistentClient\nfootiq_matches collection\ndedup by chunk id"]
+    end
+
+    subgraph Query["Query Pipeline"]
+        Q1["Embed question\n→ query vector"]
+        Q2["Similarity search\ntop-k chunks"]
+        Q3["Grounded prompt\n+ Gemini 1.5 Flash"]
+        Q4["Answer\n+ confidence score\n+ source chunks"]
+    end
+
+    subgraph Stats["Stats Pipeline (offline)"]
+        S1["build_player_summaries()\nIterate events\nAccumulate per-player:\npasses · shots · goals\nduels · dribbles · fouls"]
+        S2["Player Cards\npass_accuracy = successful/total\nAll from real events only"]
+    end
+
+    JSON --> P1 --> P2 --> P3
+    P3 --> Q2
+    Q1 --> Q2 --> Q3 --> Q4
+    JSON --> S1 --> S2
+
+    style Ingest fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style Query fill:#1a0d2e,stroke:#bb86fc,color:#f0e0ff
+    style Stats fill:#0b1e36,stroke:#00e0ff,color:#e0f0ff
+```
 
 ---
 
 ## 🧰 Tech Stack
 
-| Layer | Technologies |
-|-------|-------------|
-| **Frontend** | React 19 · TypeScript · Vite 8 · Tailwind CSS 4 · React Router 7 · lucide-react |
-| **Backend** | FastAPI · Uvicorn · Pydantic 2 |
-| **AI / RAG** | LangChain · Google Gemini (`gemini-1.5-flash`, `text-embedding-004`) · ChromaDB |
-| **Computer Vision** | YOLOv8 (Ultralytics) · OpenCV — *lazy-loaded, optional* |
-| **Deploy** | Render (backend) · Vercel (frontend) |
+### Backend
+
+| Package | Version | Role |
+|---------|---------|------|
+| `fastapi` | 0.115 | API framework |
+| `uvicorn` | 0.34 | ASGI server |
+| `langchain` + `langchain-community` | 0.3 | RAG orchestration |
+| `langchain-google-genai` | 2.0 | Gemini embeddings + chat |
+| `chromadb` | 0.6 | Local vector store |
+| `pydantic` | 2.10 | Request/response schemas |
+| `python-multipart` | 0.0.18 | File upload handling |
+| `ultralytics` | 8.3 | YOLOv8 tracking *(lazy-loaded)* |
+| `opencv-python-headless` | 4.10 | Frame processing *(lazy-loaded)* |
+
+### Frontend
+
+| Package | Version | Role |
+|---------|---------|------|
+| `react` + `react-dom` | 19 | UI framework |
+| `react-router-dom` | 7 | Client-side routing |
+| `vite` | 8 | Build tool |
+| `tailwindcss` | 4 | Utility CSS |
+| `lucide-react` | 1.17 | Icon set |
+| `typescript` | 5 | Type safety |
 
 ---
 
@@ -207,176 +315,268 @@ State is shared across pages via a React Context (`MatchContext`); the active `m
 
 ```
 FootIQ/
-├── footiq-backend/                 # FastAPI service
+│
+├── README.md
+├── DEPLOYMENT.md                         # Step-by-step Render + Vercel guide
+│
+├── footiq-backend/                       # FastAPI service
+│   ├── Procfile                          # Render start command
+│   ├── render.yaml                       # Render IaC config
+│   ├── requirements.txt                  # Pinned deps (minor-version ranges)
+│   ├── .env.example                      # Secret template (never commit .env)
+│   │
 │   ├── app/
-│   │   ├── main.py                 # App entry, CORS, lifespan, router wiring
-│   │   ├── config.py               # Env-var config
-│   │   ├── routes/                 # health · upload · query · players · history · video · ingest
-│   │   └── services/
-│   │       ├── embedder.py         # ChromaDB + Gemini embeddings
-│   │       ├── rag.py              # RAG: retrieve → ground → generate
-│   │       ├── analytics.py        # StatsBomb → player stat aggregation
-│   │       ├── loader.py           # JSON parsing → chunks
-│   │       ├── store.py            # In-memory event + session history
-│   │       └── cv_service.py       # YOLOv8 video tracking (lazy imports)
-│   ├── requirements.txt
-│   ├── Procfile                    # Render start command
-│   └── render.yaml                 # Render IaC config
+│   │   ├── main.py                       # App factory, CORS, lifespan, routers
+│   │   ├── config.py                     # Env-var config (GEMINI_API_KEY etc.)
+│   │   │
+│   │   ├── routes/
+│   │   │   ├── health.py                 # GET /health
+│   │   │   ├── upload.py                 # POST /upload  ← main ingest entry point
+│   │   │   ├── query.py                  # POST /query   ← main AI entry point
+│   │   │   ├── players.py                # GET /players/{match_id}
+│   │   │   ├── history.py                # GET /history
+│   │   │   ├── ingest.py                 # POST /ingest  (server-side DATA_DIR)
+│   │   │   └── video.py                  # POST /video/upload + status/heatmap
+│   │   │
+│   │   ├── services/
+│   │   │   ├── embedder.py               # ChromaDB client + Gemini embeddings
+│   │   │   ├── rag.py                    # Retrieve → ground → generate
+│   │   │   ├── analytics.py              # StatsBomb event → player stat aggregation
+│   │   │   ├── loader.py                 # JSON → LangChain Document chunks
+│   │   │   ├── store.py                  # In-memory event + session history store
+│   │   │   └── cv_service.py             # YOLOv8 tracking (cv2 + ultralytics lazy)
+│   │   │
+│   │   └── models/
+│   │       └── schemas.py                # Pydantic request/response models
+│   │
+│   └── tests/
+│       └── sample_match_debug.json       # Minimal 3-event StatsBomb sample
 │
-├── footiq-frontend/                # React + Vite SPA
-│   ├── src/
-│   │   ├── App.tsx                 # Router shell
-│   │   ├── context/MatchContext.tsx# Global shared state
-│   │   ├── pages/                  # Landing · Dashboard · Coach · History · Settings
-│   │   └── components/             # Layout · PlayerCard · Radar
-│   └── vercel.json                 # SPA rewrite rule
-│
-└── DEPLOYMENT.md                   # Step-by-step Render + Vercel guide
+└── footiq-frontend/                      # React + Vite SPA
+    ├── vercel.json                        # SPA rewrite rule (no 404 on refresh)
+    ├── .env.example                       # VITE_API_BASE template
+    ├── index.html
+    │
+    └── src/
+        ├── App.tsx                        # Router shell (BrowserRouter + Routes)
+        ├── types.ts                       # Shared TS types (QueueItem, FeedMessage, PlayerCard)
+        │
+        ├── context/
+        │   └── MatchContext.tsx           # Global state + API functions (useMatch hook)
+        │
+        ├── components/
+        │   ├── Layout.tsx                 # Sidebar shell + <Outlet />
+        │   ├── PlayerCard.tsx             # Player stat card component
+        │   └── Radar.tsx                  # SVG pentagon radar chart
+        │
+        └── pages/
+            ├── LandingPage.tsx            # / — marketing entry (no Layout)
+            ├── Dashboard.tsx              # /dashboard — upload + pitch + Q&A + players
+            ├── Coach.tsx                  # /coach — full-screen AI chat
+            ├── HistoryPage.tsx            # /history — past Q&A sessions
+            └── Settings.tsx              # /settings — health check + config
 ```
 
 ---
 
-## 🚀 Getting Started (Local)
+## 🚀 Local Setup
 
 ### Prerequisites
 
 - **Python 3.11+**
 - **Node.js 18+**
-- A free **Google Gemini API key** → [aistudio.google.com](https://aistudio.google.com/)
+- **Google Gemini API key** → free at [aistudio.google.com](https://aistudio.google.com/)
 
-### 1. Backend
+### Backend
 
 ```bash
 cd footiq-backend
 
-# Create an isolated environment
+# 1. Isolated environment
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 
-# Install dependencies
+# 2. Install dependencies (ultralytics/torch excluded = faster, ~150 MB)
 pip install -r requirements.txt
 
-# Configure secrets (never commit this file — it's gitignored)
+# 3. Configure secrets — edit .env and set your real key
 cp .env.example .env
-#   edit .env and set GEMINI_API_KEY=your-key
+# GEMINI_API_KEY=AIza...
+# ALLOWED_ORIGINS=http://localhost:5173
 
-# Run
+# 4. Start
 uvicorn app.main:app --reload --port 8000
 ```
 
-Backend is now live at **http://localhost:8000** — interactive API docs at **http://localhost:8000/docs**.
+Interactive API docs: **http://localhost:8000/docs**
 
-### 2. Frontend
+### Frontend
 
 ```bash
 cd footiq-frontend
 
 npm install
 
-# Point the frontend at your backend
+# Point at your local backend
 cp .env.example .env
-#   set VITE_API_BASE=http://localhost:8000
+# VITE_API_BASE=http://localhost:8000
 
 npm run dev
 ```
 
-Open **http://localhost:5173** → click **Launch App**.
+Open **http://localhost:5173** → click **Launch App** → you're in.
 
-### 3. Try it end-to-end
+### Quick first match
 
-1. Go to **Dashboard**, enter a `match_id` (e.g. `demo`).
-2. Upload a StatsBomb-format JSON (grab one from [statsbomb/open-data](https://github.com/statsbomb/open-data/tree/master/data/events), or use `footiq-backend/tests/sample_match_debug.json`).
-3. Ask a question in the Q&A panel — e.g. *"Who scored?"*
-4. Check **Settings** to confirm `chroma_connected: true` and a non-zero vector count.
+1. Go to **Dashboard**, set `match_id` to `demo`
+2. Click **Upload** → pick `footiq-backend/tests/sample_match_debug.json`
+3. Ask *"Who scored?"* in the Q&A panel
+4. Open **Settings** → confirm `chroma_connected: true`
 
 ---
 
 ## 🧪 Testing the Code
 
-**Backend — verify it boots and serves correctly (no Gemini key required):**
+### Backend — offline (no Gemini key needed)
 
 ```bash
 cd footiq-backend
 source .venv/bin/activate
 
-# Health check
+# Server health
 curl http://localhost:8000/health
 # → {"status":"ok","chroma_connected":true,"vector_count":0,"collections":[]}
 
-# Validation: empty match_id is rejected
+# Validation: empty match_id must be rejected
 curl -X POST "http://localhost:8000/upload?match_id=" \
      -F "file=@tests/sample_match_debug.json"
 # → 422 {"detail":"match_id cannot be empty"}
 
-# Player-stat aggregation runs fully offline (no AI needed)
-python -c "import json; from app.routes.players import build_player_summaries; \
-print(json.dumps(build_player_summaries(json.load(open('tests/sample_match_debug.json'))), indent=2))"
+# Validation: non-JSON file rejected
+echo "not json" > /tmp/x.txt
+curl -X POST "http://localhost:8000/upload?match_id=m1" \
+     -F "file=@/tmp/x.txt"
+# → 400 {"detail":"Only JSON files are supported"}
+
+# Player-stat aggregation (pure Python, zero AI)
+python -c "
+import json
+from app.routes.players import build_player_summaries
+events = json.load(open('tests/sample_match_debug.json'))
+print(json.dumps(build_player_summaries(events), indent=2))
+"
+# → Bob Debug: 1 shot / 1 goal
+# → Alice Debug: 1 pass @ 100% / 1 duel won
 ```
 
-**Run the unit tests:**
+### Run unit tests
 
 ```bash
 cd footiq-backend
 pytest
 ```
 
-**Frontend — type-check and production build:**
+### Frontend — type-check and build
 
 ```bash
 cd footiq-frontend
-npm run build      # runs `tsc && vite build`
+npm run build
+# tsc + vite → dist/  (~268 KB JS, ~30 KB CSS)
 ```
 
-> 💡 The AI upload/query paths require a valid `GEMINI_API_KEY` **and** normal outbound network
-> access. Everything else (health, validation, routing, player-stat math, CORS, persistence) is
-> verifiable without any external calls.
+### What requires a live Gemini key
+
+| Test | Offline | Needs key |
+|------|---------|-----------|
+| App boots, all routes registered | ✅ | |
+| Health check, validation, CORS | ✅ | |
+| Player stat aggregation | ✅ | |
+| Frontend production build | ✅ | |
+| Embedding & uploading a real match | | ✅ |
+| AI Q&A responses | | ✅ |
+| Video tracking (YOLOv8) | | needs ≥ 2 GB RAM |
 
 ---
 
 ## 📚 API Reference
 
-Base URL (local): `http://localhost:8000` · Interactive docs: `/docs`
+Base URL (local): `http://localhost:8000` · Docs: `/docs`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Service + ChromaDB status (`status`, `chroma_connected`, `vector_count`). |
-| `POST` | `/upload?match_id=<id>` | Upload & index a StatsBomb JSON file (multipart). |
-| `POST` | `/query` | Ask a question. Body: `{ match_id, question, top_k? }`. |
-| `GET` | `/players/{match_id}` | Player stat cards for a match. |
-| `GET` | `/players/{match_id}/{player_name}` | Narrative summary for one player. |
-| `GET` | `/history?limit=<n>` | Chronological Q&A session history. |
-| `POST` | `/ingest` | Re-ingest data found in the server's `DATA_DIR`. |
-| `POST` | `/video/upload` | Upload match video for YOLOv8 tracking *(heavy)*. |
-| `GET` | `/video/status/{task_id}` | Poll video-processing progress. |
-| `GET` | `/video/heatmap/{task_id}` | Retrieve generated movement heatmap. |
+| Method | Endpoint | Body / Params | Response |
+|--------|----------|---------------|----------|
+| `GET` | `/health` | — | `{ status, chroma_connected, vector_count, collections }` |
+| `POST` | `/upload` | `?match_id=` + JSON file (multipart) | `{ match_id, events_loaded, chunks_created, message }` |
+| `POST` | `/query` | `{ match_id, question, top_k? }` | `{ answer, confidence, sources, processing_time_ms }` |
+| `GET` | `/players/{match_id}` | `?limit=` | Array of player stat cards |
+| `GET` | `/players/{match_id}/{player_name}` | — | Narrative text summary |
+| `GET` | `/history` | `?limit=` | `{ total, items[] }` |
+| `POST` | `/ingest` | — | Re-index files from `DATA_DIR` |
+| `POST` | `/video/upload` | video file (multipart) | `{ task_id }` |
+| `GET` | `/video/status/{task_id}` | — | `{ status, progress, sprints, processed_frames }` |
+| `GET` | `/video/heatmap/{task_id}` | — | `{ heatmap: [{x, y}] }` |
 
-**Example — ask a question:**
+**Example — upload:**
+
+```bash
+curl -X POST "http://localhost:8000/upload?match_id=demo" \
+     -F "file=@match_events.json"
+```
+
+**Example — query:**
 
 ```bash
 curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"match_id":"demo","question":"Who had the best pass accuracy?"}'
+     -H "Content-Type: application/json" \
+     -d '{"match_id":"demo","question":"Who had the best pass accuracy?","top_k":5}'
 ```
 
 ---
 
 ## 🌐 Deployment
 
-FootIQ deploys as two services: **backend → Render**, **frontend → Vercel**.
-
 ```mermaid
 flowchart LR
-    Dev["💻 Git push"] --> GH["GitHub repo"]
-    GH --> R["Render<br/>(FastAPI backend)<br/>render.yaml + Procfile"]
-    GH --> V["Vercel<br/>(React frontend)<br/>vercel.json"]
-    V -- "VITE_API_BASE → https://...onrender.com" --> R
-    R -- "ALLOWED_ORIGINS → https://...vercel.app" --> V
+    GH["GitHub\nmain branch"]
 
-    style R fill:#14213d,stroke:#00ff41,color:#fff
-    style V fill:#0b2942,stroke:#00e0ff,color:#fff
+    GH -->|"auto-deploy\non push"| RND
+    GH -->|"auto-deploy\non push"| VCL
+
+    subgraph RND["Render — Backend"]
+        direction TB
+        R1["render.yaml + Procfile"]
+        R2["pip install -r requirements.txt"]
+        R3["uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
+        R4["Env vars:\nGEMINI_API_KEY\nALLOWED_ORIGINS"]
+        R1 --> R2 --> R3
+    end
+
+    subgraph VCL["Vercel — Frontend"]
+        direction TB
+        V1["vercel.json (SPA rewrite)"]
+        V2["npm run build → tsc + vite"]
+        V3["Static bundle → CDN"]
+        V4["Env var:\nVITE_API_BASE"]
+        V1 --> V2 --> V3
+    end
+
+    RND -- "CORS:\nALLOWED_ORIGINS=\nhttps://your-app.vercel.app" --> VCL
+    VCL -- "API calls to\nhttps://your-app.onrender.com" --> RND
+
+    style RND fill:#0d1f0d,stroke:#00ff41,color:#e0ffe0
+    style VCL fill:#0b1e36,stroke:#00e0ff,color:#e0f0ff
 ```
 
-👉 **Full step-by-step instructions, including secret setup and CORS wiring, are in [DEPLOYMENT.md](./DEPLOYMENT.md).**
+Full step-by-step guide with secret setup, CORS wiring, and smoke-test checklist → **[DEPLOYMENT.md](./DEPLOYMENT.md)**
+
+**Quick reference:**
+
+| | Backend | Frontend |
+|---|---|---|
+| Platform | Render | Vercel |
+| Root dir | `footiq-backend` | `footiq-frontend` |
+| Build cmd | `pip install -r requirements.txt` | `npm run build` |
+| Start cmd | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` | *(static, no server)* |
+| Required secrets | `GEMINI_API_KEY`, `ALLOWED_ORIGINS` | `VITE_API_BASE` |
 
 ---
 
@@ -384,44 +584,42 @@ flowchart LR
 
 **Backend** (`footiq-backend/.env` locally · Render dashboard in production):
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GEMINI_API_KEY` | ✅ | Google Gemini API key. **Never commit this.** |
-| `ALLOWED_ORIGINS` | ✅ (prod) | Comma-separated allowed CORS origins (your Vercel URL). |
-| `CHROMA_PATH` | – | Vector store path (default `./chroma_db`). |
-| `DATA_DIR` | – | Auto-ingest data folder (default `./data`). |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GEMINI_API_KEY` | ✅ | — | Google Gemini key. **Never commit this.** |
+| `ALLOWED_ORIGINS` | ✅ prod | `http://localhost:5173` | Comma-separated CORS origins. |
+| `CHROMA_PATH` | — | `./chroma_db` | ChromaDB persistence directory. |
+| `DATA_DIR` | — | `./data` | Auto-ingest JSON folder on startup. |
 
 **Frontend** (`footiq-frontend/.env` locally · Vercel dashboard in production):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_BASE` | ✅ | Backend base URL. Inlined at **build time** — redeploy after changing. |
+| `VITE_API_BASE` | ✅ | Backend URL. Inlined at build time — **redeploy after changing.** |
 
-> 🔒 All `.env` files are gitignored. Secrets live only in local `.env` files and the hosting
-> dashboards — **never in source control or chat.**
+> All `.env` files are gitignored. Secrets never enter source control.
 
 ---
 
-## ⚠️ Limitations & Roadmap
+## ⚠️ Known Limitations
 
-**Free-tier notes:**
-
-- **Render free tier** sleeps after ~15 min idle (first request after wake takes ~30–50 s) and has **no persistent disk** — ChromaDB resets on each redeploy. For permanent storage, use a Render paid disk or swap in **Qdrant Cloud** (free, persistent).
-- The **video/CV feature** needs ~2 GB RAM and will not run on the 512 MB free tier. The app boots fine regardless because PyTorch/OpenCV are imported lazily, only when a video is processed.
-
-**Roadmap:**
-
-- [ ] Persistent vector store (Qdrant Cloud integration)
-- [ ] Multi-match comparison
-- [ ] Authentication & per-user workspaces
-- [ ] Live xG / pass-network visualizations
+| Limitation | Detail |
+|-----------|--------|
+| **Render free tier sleeps** | First request after ~15 min idle takes 30–50 s to wake. |
+| **No persistent disk (free tier)** | ChromaDB resets on every Render deploy. Re-upload match JSON after a restart. Paid disk or Qdrant Cloud free tier fix this. |
+| **Video CV needs ≥ 2 GB RAM** | YOLOv8 + PyTorch won't run on the 512 MB free tier. App boots fine regardless (imports are lazy). Use a paid instance for video. |
+| **Session history is in-memory** | History resets when the backend restarts. |
+| **Single-user, no auth** | No workspaces or user isolation. Suitable for personal or demo use. |
 
 ---
 
 <div align="center">
+<br/>
 
-**Built with FastAPI · React · LangChain · Google Gemini**
+**Built with FastAPI · React 19 · LangChain · Google Gemini · ChromaDB · YOLOv8**
 
-*StatsBomb JSON · ChromaDB RAG · YOLOv8*
+<br/>
+
+*StatsBomb is a trademark of StatsBomb Ltd. This project is not affiliated with or endorsed by StatsBomb.*
 
 </div>
